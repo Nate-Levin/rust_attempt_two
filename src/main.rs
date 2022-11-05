@@ -104,94 +104,28 @@ fn main(){
     let mut qb_hash: HashMap<String, Vec<QbFile>> = HashMap::new();
     let mut qb_hash_count: HashMap<String, i32> = HashMap::new();
     
-    (anz_hash, anz_hash_count) = check_and_return_array(anz_struct_data, anz_hash, anz_hash_count);
-    (qb_hash, qb_hash_count) = check_and_return_array(qb_struct_data, qb_hash, qb_hash_count);
+    (anz_hash, anz_hash_count) = check_and_return_hash(anz_struct_data, anz_hash, anz_hash_count);
+    (qb_hash, qb_hash_count) = check_and_return_hash(qb_struct_data, qb_hash, qb_hash_count);
     
+
+
     // compare the qbfile has count to the anz
 
-    let mut values_to_remove: Vec<String> = Vec::new();
+    let mut anz_values_to_remove: Vec<String> = Vec::new();
     let mut qb_values_to_remove: Vec<String> = Vec::new();
 
     for (k1, v1) in qb_hash_count.iter(){
-        //matches literals
-        match anz_hash_count.get(&k1 as &str){
-            Some(v) => {
-                if v1 == v{
-                    values_to_remove.push(k1.clone());
-                    qb_values_to_remove.push(k1.clone());
-                    continue;
-                }
-            }
-            None => (),
-        }
-
-        //matches floats
-        let f:f32 = k1.clone().parse::<f32>().unwrap();
-        match anz_hash_count.get(&f.to_string() as &str){
-            Some(v) => {
-                if v1 == v{
-                    values_to_remove.push(f.clone().to_string());
-                    qb_values_to_remove.push(k1.clone());
-                    continue;
-                }
-            }
-            None => (),
-        }
-
-        //ANZ CSV takes the trailing 0's off decimal places... this catches that
-        let mut trailing_zero: String = k1.to_string();
-        trailing_zero.pop();
-
-        match anz_hash_count.get(&trailing_zero as &str){
-            Some(v) => {
-                if v1 == v{
-                    values_to_remove.push(trailing_zero.clone());
-                    qb_values_to_remove.push(k1.clone());
-                    continue;
-                }
-            }
-            None => (),
-        }
-
-        //ANZ In all its wisom also removes decimals for whole numbers
-        trailing_zero.pop();
-        trailing_zero.pop();
-        match anz_hash_count.get(&trailing_zero as &str){
-            Some(v) => {
-                if v1 == v{
-                    values_to_remove.push(trailing_zero.clone());
-                    qb_values_to_remove.push(k1.clone());
-                    continue;
-                }
-            }
-            None => (),
-        }
+        // matches with the leading 0 removed
+        let without_trailing_zero = remove_trailing_zeros(k1.clone().to_string(), 0);
+        
+        // matches the literal
+        (anz_values_to_remove, qb_values_to_remove) = get_matching_values(anz_hash_count.clone(), anz_values_to_remove, qb_values_to_remove, k1.to_string(), k1.to_string(), v1);
+        (anz_values_to_remove, qb_values_to_remove) = get_matching_values(anz_hash_count.clone(), anz_values_to_remove, qb_values_to_remove, without_trailing_zero.clone(), k1.to_string(), v1);
+        
     }
 
-
-    for i in values_to_remove{
-        match anz_hash_count.remove(&i as &str){
-            Some(v) => {}
-            None => (),
-        }
-
-        match qb_hash_count.remove(&i as &str){
-            Some(v) => {}
-            None => (),
-        }
-    }
-
-    for i in qb_values_to_remove{
-        match anz_hash_count.remove(&i as &str){
-            Some(v) => {}
-            None => (),
-        }
-
-        match qb_hash_count.remove(&i as &str){
-            Some(v) => {}
-            None => (),
-        }
-    }
+    (anz_hash_count, qb_hash_count) = remove_matching_values_from_counter(anz_values_to_remove, anz_hash_count, qb_hash_count)
+    (anz_hash_count, qb_hash_count) = remove_matching_values_from_counter(qb_values_to_remove, anz_hash_count, qb_hash_count)
 
     // At this point we only have the values that don't exist, entered incorrectly,
     // or don't show up as many times as expected. 
@@ -308,7 +242,7 @@ fn main(){
 
                 //ANZ DATA
                 // because of the whackness we may need to remove the trailing zeros to find
-                let str1: String = remove_trailing_zeros(i.to_string());
+                let str1: String = remove_trailing_zeros(i.to_string(), 0);
                 match anz_hash.get_key_value(&str1){
                     Some((k,v)) => {
                         for mut x in v.clone(){
@@ -395,7 +329,7 @@ fn main(){
 
 }
 
-fn check_and_return_array<T: AsRef<String> +Clone + std::fmt::Debug>
+fn check_and_return_hash<T: AsRef<String> + Clone>
                         (struct_data: Vec<T>, mut hash_map: HashMap<String, Vec<T>>,
                          mut hash_counter: HashMap<String, i32>) 
                          -> (HashMap<String, Vec<T>>, HashMap<String, i32>){
@@ -420,15 +354,51 @@ fn check_and_return_array<T: AsRef<String> +Clone + std::fmt::Debug>
     (hash_map, hash_counter)
 }
 
-fn remove_trailing_zeros(mut number: String) -> String{
+fn get_matching_values(comp_hash_count: HashMap<String, i32>, mut values_to_remove: Vec<String>, mut original_values: Vec<String>, 
+                       key:String, original_key: String, value: &i32) -> (Vec<String>, Vec<String>){
+    
+    match comp_hash_count.get(&key as &str){
+        Some(v) => {
+            if value == v{
+                values_to_remove.push(key.clone());
+                original_values.push(original_key.clone());
+            }
+        }
+        None => (),
+    }
+    (values_to_remove, original_values)
+}
 
+fn remove_matching_values_from_counter(values_to_remove: Vec<String>, mut hash_counter_one: Vec<String, i32>,
+                                       mut hash_counter_two: Vec<String, i32>) -> (Vec<String, i32>, Vec<String, i32>){
+
+    for i in values_to_remove{
+        match hash_counter_one.remove(&i as &str){
+            Some(v) => {}
+            None => (),
+        }
+        match hash_counter_two.remove(&i as &str){
+            Some(v) => {}
+            None => (),
+        }
+    }
+    
+    (hash_counter_one, hash_counter_two)
+}
+
+fn remove_trailing_zeros(mut number: String, mut iterations: i32) -> String{
+
+    if iterations >= 3{
+        return number.to_string();
+    } 
     if number.chars().last().unwrap() == '0' || number.chars().last().unwrap() == '.' {
         number.pop();
-        number = remove_trailing_zeros(number.clone());
+        number = remove_trailing_zeros(number.clone(), iterations + 1);
     }
 
     number.to_string()
 }
+
 
 
 fn read_anz_file(anz_file: &str)-> Result<Vec<AnzFile>, Box<dyn Error>>{
