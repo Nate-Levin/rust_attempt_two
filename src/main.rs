@@ -104,47 +104,9 @@ fn main(){
     let mut qb_hash: HashMap<String, Vec<QbFile>> = HashMap::new();
     let mut qb_hash_count: HashMap<String, i32> = HashMap::new();
     
-    let mut _v1 = check_and_return_array(anz_struct_data, anz_hash, anz_hash_count);
-
-    println!("{:#?}", _v1);
-    process::exit(1);
-    for i in anz_struct_data{
-        match anz_hash.get_mut(&i.amount){
-            Some(v) =>{
-                v.push(i.clone());
-            }
-            None =>{
-                anz_hash.insert(i.amount.clone(), vec![i.clone()]);
-            }
-        }
-        match anz_hash_count.get_mut(&i.amount){
-            Some(v) =>{
-                *v += 1;
-            }
-            None =>{
-                anz_hash_count.insert(i.amount.clone(), 1);
-            }
-        }
-    }
-
-    for i in qb_struct_data{
-        match qb_hash.get_mut(&i.amount){
-            Some(v) =>{
-                v.push(i.clone());
-            }
-            None =>{
-                qb_hash.insert(i.amount.clone(), vec![i.clone()]);
-            }
-        }
-        match qb_hash_count.get_mut(&i.amount){
-            Some(v) =>{
-                *v += 1;
-            }
-            None =>{
-                qb_hash_count.insert(i.amount.clone(), 1);
-            }
-        }
-    }
+    (anz_hash, anz_hash_count) = check_and_return_array(anz_struct_data, anz_hash, anz_hash_count);
+    (qb_hash, qb_hash_count) = check_and_return_array(qb_struct_data, qb_hash, qb_hash_count);
+    
     // compare the qbfile has count to the anz
 
     let mut values_to_remove: Vec<String> = Vec::new();
@@ -444,6 +406,14 @@ fn check_and_return_array<T: AsRef<String> +Clone + std::fmt::Debug>
             }
             None =>{
                 hash_map.insert((*i.as_ref().clone()).to_string(), vec![i.clone()]);
+            }
+        }
+        match hash_counter.get_mut(&*i.as_ref()){
+            Some(v) =>{
+                *v += 1;
+            }
+            None =>{
+                hash_counter.insert((*i.as_ref().clone()).to_string(), 1);
             }
         }
     }
