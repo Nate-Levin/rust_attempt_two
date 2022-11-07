@@ -4,12 +4,18 @@
 #![allow(dead_code)]
 #![allow(unused_assignments)]
 
+mod print;
+
 use serde_derive::{Deserialize, Serialize};
 use csv::Reader;
 use std::error::Error;
 use std::collections::HashMap;
 use std::str::FromStr;
 use std::process;
+
+use crate::print::print::print_anz;
+use crate::print::print::print_qb;
+use crate::print::print::print_doesnt_exist;
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "PascalCase")]
@@ -30,7 +36,7 @@ pub struct QbFile {
     pub date: String,
     pub amount: String
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct AnzErrorMessage{
     pub amount: String,
     pub frequency: usize,
@@ -42,17 +48,18 @@ pub struct AnzErrorMessage{
     pub particulars: Vec<String>,
     pub error_message: String 
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct QbErrorMessage{
     pub amount: String,
     pub dates: Vec<String>,
     pub names: Vec<String>,
+    pub frequency: usize,
     pub anz_frequency: String,
     pub anz_dates: Vec<String>,
     pub anz_names: Vec<String>,
     pub error_message: String 
 }
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct DoesntExistMessage{
     pub amount: String,
     pub dates: Vec<String>,
@@ -270,29 +277,6 @@ fn main(){
         }
     }
 
-    for i in anz_error{
-        println!("{} \nthis value appears {} times in ANZ vs {} times in QUICKBOOKS",
-        &i.error_message, &i.frequency, &i.qb_frequency);
-        println!("\nANZ details are as follows: ");
-        println!("\nDates: ");
-        for x in &i.dates{
-            println!("{}", x);
-        }
-        println!("\nDetails: ");
-        for x in &i.details{
-            println!("{}", x);
-        }
-        println!("\nQUICKBOOKS details are as follows:");
-        println!("\nDates: ");
-        for x in &i.qb_dates{
-            println!("{}", x);
-        }
-        println!("\nNames: ");
-        for x in &i.qb_names{
-            println!("{}", x);
-        }
-        println!("\n\n");
-    }
     let mut qb_error: Vec<QbErrorMessage> = Vec::new();
     for i in investigate_qb{
         match anz_hash.get_key_value(&i){
@@ -320,6 +304,7 @@ fn main(){
                     amount: i.clone(),
                     dates: dates,
                     names: names,
+                    frequency: v.len(),
                     anz_frequency: v.len().to_string(),
                     anz_dates: anz_dates, 
                     anz_names: anz_names,
@@ -331,18 +316,12 @@ fn main(){
             None => (),
         }
     }
-
-    for i in doesnt_exist_error{
-        println!("{}", &i.error_message);
-        println!("\nThese occur on dates:");
-        for x in &i.dates{
-            println!("{}", x);
-        }
-        println!("\nBy:");
-        for x in &i.names{
-            println!("{}", x);
-        }
-        println!("\n\n");
+    println!("{} {} {}", anz_error.len(), qb_error.len(), doesnt_exist_error.len());
+    let mut debug = true;
+    if !debug {
+        print_anz(anz_error);
+        print_qb(qb_error);
+        print_doesnt_exist(doesnt_exist_error);
     }
 
 }
