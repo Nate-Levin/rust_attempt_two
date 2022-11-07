@@ -117,8 +117,8 @@ fn main(){
         let without_trailing_zero = remove_trailing_zeros(k1.clone().to_string(), 0);
         
         // matches the literal
-        (anz_values_to_remove, qb_values_to_remove) = get_matching_values(anz_hash_count.clone(), anz_values_to_remove, qb_values_to_remove, k1.to_string(), k1.to_string(), v1);
-        (anz_values_to_remove, qb_values_to_remove) = get_matching_values(anz_hash_count.clone(), anz_values_to_remove, qb_values_to_remove, without_trailing_zero.clone(), k1.to_string(), v1);
+        get_matching_values(anz_hash_count.clone(), &mut anz_values_to_remove, &mut qb_values_to_remove, k1.to_string(), k1.to_string(), v1);
+        get_matching_values(anz_hash_count.clone(), &mut anz_values_to_remove, &mut qb_values_to_remove, without_trailing_zero.clone(), k1.to_string(), v1);
         
     }
 
@@ -135,38 +135,16 @@ fn main(){
     let mut investigate_anz: Vec<String> = Vec::new();
     let mut investigate_qb: Vec<String> = Vec::new();
 
-    for (k1, v1) in &qb_hash_count{
+    for (key, value) in &qb_hash_count{
         // to eliminate the fact it still could be decimal issue
         let mut exists = false;
-        match anz_hash_count.get(&k1 as &str){
-            Some(v) => {
-                if v > &v1 {
-                    investigate_qb.push(k1.clone());
-                }
-                else{
-                    investigate_anz.push(k1.clone());
-                }
-                exists = true;
-                continue;
-            }
-            None => (),
-        }      
-        let mut trailing_zero = remove_trailing_zeros(k1.clone().to_string(), 0);
-        match anz_hash_count.get(&trailing_zero as &str){
-            Some(v) => {
-                if v > &v1 {
-                    investigate_qb.push(k1.clone());
-                }
-                else{
-                    investigate_anz.push(k1.clone());
-                }
-                exists = true;
-                continue;
-            }
-            None => (),
+        build_investigation(anz_hash_count.clone(), key, key, value, &mut exists, &mut investigate_qb, &mut investigate_anz);
+        if !exists {
+            let trailing_zero = remove_trailing_zeros(key.clone().to_string(), 0);
+            build_investigation(anz_hash_count.clone(), &trailing_zero, key, value, &mut exists, &mut investigate_qb, &mut investigate_anz);
         }
-        if exists == false{
-            doesnt_exist_in_anz.push(k1.clone());
+        if !exists {
+            doesnt_exist_in_anz.push(key.clone());
         }
     }
 
@@ -430,8 +408,8 @@ fn check_and_return_hash<T: AsRef<String> + Clone>
     }
 }
 
-fn get_matching_values(comp_hash_count: HashMap<String, i32>, mut values_to_remove: Vec<String>, mut original_values: Vec<String>, 
-                       key:String, original_key: String, value: &i32) -> (Vec<String>, Vec<String>){
+fn get_matching_values(comp_hash_count: HashMap<String, i32>, values_to_remove: &mut Vec<String>, original_values: &mut Vec<String>, 
+                       key:String, original_key: String, value: &i32){
     
     match comp_hash_count.get(&key as &str){
         Some(v) => {
@@ -442,7 +420,6 @@ fn get_matching_values(comp_hash_count: HashMap<String, i32>, mut values_to_remo
         }
         None => (),
     }
-    (values_to_remove, original_values)
 }
 
 fn remove_matching_values_from_counter(values_to_remove:Vec<String>, hash_counter_one:&mut HashMap<String, i32>, hash_counter_two:&mut HashMap<String, i32>){
@@ -456,6 +433,21 @@ fn remove_matching_values_from_counter(values_to_remove:Vec<String>, hash_counte
             None => (),
         }
     }
+}
+
+fn build_investigation(hash_counter:HashMap<String, i32>, key: &String, original_key:&String, value: &i32, exists: &mut bool, qb_vec:&mut Vec<String>, anz_vec:&mut Vec<String>){
+    match hash_counter.get(key as &str){
+        Some(v) => {
+            if v > value {
+                qb_vec.push(original_key.clone());
+            }
+            else{
+                anz_vec.push(key.clone());
+            }
+            *exists = true;
+        }
+        None => (),
+    } 
 }
 
 fn remove_trailing_zeros(mut number: String, mut iterations: i32) -> String{
