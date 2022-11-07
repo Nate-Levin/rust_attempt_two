@@ -93,21 +93,13 @@ fn main(){
     let qb_file: String = "src/one_year_qb.csv".to_owned();
 
     match read_csv_return_struct(&anz_file){
-        Err(e) =>{
-            eprintln!("{}", e);
-        }
-        Ok(v)=>{
-            anz_struct_data = v;
-        }
+        Err(e) => eprintln!("{}", e),
+        Ok(v)=> anz_struct_data = v,
     }
 
     match read_csv_return_struct(&qb_file){
-        Err(e) =>{
-            eprintln!("{}", e);
-        }
-        Ok(v)=>{
-            qb_struct_data = v;
-        }
+        Err(e) => eprintln!("{}", e),
+        Ok(v)=> qb_struct_data = v,
     }
     let mut anz_hash: HashMap<String, Vec<AnzFile>> = HashMap::new();
     let mut anz_hash_count: HashMap<String, i32> = HashMap::new();
