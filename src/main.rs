@@ -1,16 +1,13 @@
 #![allow(unused_imports)]
 #![allow(unused_variables)]
 #![allow(unused_mut)]
-#![allow(dead_code)]
-#![allow(unused_assignments)]
 
 mod print;
 
-use serde_derive::{Deserialize, Serialize};
+use serde_derive::Deserialize;
 use csv::Reader;
 use std::error::Error;
 use std::collections::HashMap;
-use std::str::FromStr;
 use std::process;
 
 use crate::print::print::print_anz;
@@ -181,7 +178,7 @@ fn main(){
     for i in &doesnt_exist_in_anz{
         match qb_hash.get_key_value(i){
             Some((k,v)) => {
-                let mut error_message:String = format!("The value {} exists in QUICKBOOKS but can't be found in ANZ", i.clone());
+                let error_message:String = format!("The value {} exists in QUICKBOOKS but can't be found in ANZ", i.clone());
                 let mut dates: Vec<String> = Vec::new(); 
                 let mut names: Vec<String> = Vec::new(); 
                 for mut x in v.clone() {
@@ -191,7 +188,7 @@ fn main(){
                     dates.push(x.clone().date);
                     names.push(x.clone().name);
                 }
-                let mut temp: DoesntExistMessage = DoesntExistMessage {
+                let temp: DoesntExistMessage = DoesntExistMessage {
                     amount: i.clone(),
                     error_message: error_message,
                     dates: dates,
@@ -206,14 +203,14 @@ fn main(){
     for i in &doesnt_exist_in_qb{
         match anz_hash.get_key_value(i){
             Some((k,v)) => {
-                let mut error_message:String = format!("The value {} exists in ANZ but can't be found in QUICKBOOKS", i.clone());
+                let error_message:String = format!("The value {} exists in ANZ but can't be found in QUICKBOOKS", i.clone());
                 let mut dates: Vec<String> = Vec::new(); 
                 let mut names: Vec<String> = Vec::new();
-                for mut x in v.clone() {
+                for x in v.clone() {
                     dates.push(x.clone().date);
                     names.push(x.clone().details);
                 }
-                let mut temp: DoesntExistMessage = DoesntExistMessage {
+                let temp: DoesntExistMessage = DoesntExistMessage {
                     amount: i.clone(),
                     error_message: error_message,
                     dates: dates,
@@ -229,11 +226,10 @@ fn main(){
     for i in investigate_anz{
         match qb_hash.get_key_value(&i){
             Some((k,v)) => {
-                let mut error_message = format!("The value {} exists more often in QUICKBOOKS than it does in ANZ", &i);
+                let error_message = format!("The value {} exists more often in QUICKBOOKS than it does in ANZ", &i);
                 let mut dates: Vec<String> = Vec::new();
                 let mut names: Vec<String> = Vec::new();
                 let mut particulars: Vec<String> = Vec::new();
-                let mut details: Vec<String> = Vec::new();
                 let mut qb_dates: Vec<String> = Vec::new();
                 let mut qb_names: Vec<String> = Vec::new();
                 let mut freq: usize = 0;
@@ -249,7 +245,7 @@ fn main(){
                 let str1: String = remove_trailing_zeros(i.to_string(), 0);
                 match anz_hash.get_key_value(&str1){
                     Some((k,v)) => {
-                        for mut x in v.clone(){
+                        for x in v.clone(){
                             dates.push(x.clone().date);
                             names.push(x.clone().details);
                             particulars.push(x.clone().particulars);
@@ -259,7 +255,7 @@ fn main(){
                     None => (),
                 }
 
-                let mut anz: AnzErrorMessage = AnzErrorMessage{
+                let anz: AnzErrorMessage = AnzErrorMessage{
                     amount: i.clone(),
                     frequency: freq,
                     qb_frequency: v.clone().len(),
@@ -281,26 +277,26 @@ fn main(){
     for i in investigate_qb{
         match anz_hash.get_key_value(&i){
             Some((k,v)) => {
-                let mut error_message = format!("The value {} exists more often in QUICKBOOKS than it does in ANZ", &i);
+                let error_message = format!("The value {} exists more often in QUICKBOOKS than it does in ANZ", &i);
                 let mut dates: Vec<String> = Vec::new();
                 let mut names: Vec<String> = Vec::new();
                 let mut anz_names: Vec<String> = Vec::new();
                 let mut anz_dates: Vec<String> = Vec::new();
 
-                for mut x in v.clone(){
+                for x in v.clone(){
                     anz_names.push(x.clone().details);
                     anz_dates.push(x.clone().date);
                 }
                 match qb_hash.get_key_value(&i){
                     Some((k,v)) => {
-                        for mut x in v.clone(){
+                        for x in v.clone(){
                             dates.push(x.clone().date);
                             names.push(x.clone().name);
                         }
                     }
                     None => (),
                 }
-                let mut qb: QbErrorMessage = QbErrorMessage{
+                let qb: QbErrorMessage = QbErrorMessage{
                     amount: i.clone(),
                     dates: dates,
                     names: names,
@@ -316,7 +312,6 @@ fn main(){
             None => (),
         }
     }
-    println!("{} {} {}", anz_error.len(), qb_error.len(), doesnt_exist_error.len());
     let mut debug = true;
     if !debug {
         print_anz(anz_error);
@@ -403,14 +398,8 @@ fn get_matching_values(comp_hash_count: HashMap<String, i32>, values_to_remove: 
 
 fn remove_matching_values_from_counter(values_to_remove:Vec<String>, hash_counter_one:&mut HashMap<String, i32>, hash_counter_two:&mut HashMap<String, i32>){
     for i in values_to_remove{
-        match hash_counter_one.remove(&i as &str){
-            Some(v) => {}
-            None => (),
-        }
-        match hash_counter_two.remove(&i as &str){
-            Some(v) => {}
-            None => (),
-        }
+        hash_counter_one.remove(&i as &str);
+        hash_counter_two.remove(&i as &str);
     }
 }
 
@@ -429,7 +418,7 @@ fn build_investigation(hash_counter:HashMap<String, i32>, key: &String, original
     } 
 }
 
-fn remove_trailing_zeros(mut number: String, mut iterations: i32) -> String{
+fn remove_trailing_zeros(mut number: String, iterations: i32) -> String{
     if iterations >= 3{
         return number.to_string();
     } 
