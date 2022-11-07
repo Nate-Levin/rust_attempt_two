@@ -122,8 +122,8 @@ fn main(){
         
     }
 
-    (anz_hash_count, qb_hash_count) = remove_matching_values_from_counter(anz_values_to_remove, anz_hash_count, qb_hash_count);
-    (anz_hash_count, qb_hash_count) = remove_matching_values_from_counter(qb_values_to_remove, anz_hash_count, qb_hash_count);
+    remove_matching_values_from_counter(anz_values_to_remove.clone(), &mut anz_hash_count, &mut qb_hash_count);
+    remove_matching_values_from_counter(qb_values_to_remove.clone(), &mut anz_hash_count, &mut qb_hash_count);
 
     // At this point we only have the values that don't exist, entered incorrectly,
     // or don't show up as many times as expected. 
@@ -445,9 +445,7 @@ fn get_matching_values(comp_hash_count: HashMap<String, i32>, mut values_to_remo
     (values_to_remove, original_values)
 }
 
-fn remove_matching_values_from_counter(values_to_remove:Vec<String>, mut hash_counter_one:HashMap<String, i32>,
-                                       mut hash_counter_two:HashMap<String, i32>) -> (HashMap<String, i32>, HashMap<String, i32>){
-
+fn remove_matching_values_from_counter(values_to_remove:Vec<String>, hash_counter_one:&mut HashMap<String, i32>, hash_counter_two:&mut HashMap<String, i32>){
     for i in values_to_remove{
         match hash_counter_one.remove(&i as &str){
             Some(v) => {}
@@ -458,12 +456,9 @@ fn remove_matching_values_from_counter(values_to_remove:Vec<String>, mut hash_co
             None => (),
         }
     }
-    
-    (hash_counter_one, hash_counter_two)
 }
 
 fn remove_trailing_zeros(mut number: String, mut iterations: i32) -> String{
-
     if iterations >= 3{
         return number.to_string();
     } 
@@ -471,7 +466,6 @@ fn remove_trailing_zeros(mut number: String, mut iterations: i32) -> String{
         number.pop();
         number = remove_trailing_zeros(number.clone(), iterations + 1);
     }
-
     number.to_string()
 }
 
