@@ -119,9 +119,6 @@ fn main(){
     for (k1, v1) in qb_hash_count.iter(){
         // matches with the leading 0 removed
         let without_trailing_zero = remove_trailing_zeros(k1.clone().to_string(), 0);
-        
-        // matches the literal
-        get_matching_values(anz_hash_count.clone(), &mut anz_values_to_remove, &mut qb_values_to_remove, k1.to_string(), k1.to_string(), v1);
         get_matching_values(anz_hash_count.clone(), &mut anz_values_to_remove, &mut qb_values_to_remove, without_trailing_zero.clone(), k1.to_string(), v1);
         
     }
@@ -312,7 +309,7 @@ fn main(){
             None => (),
         }
     }
-    let mut debug = true;
+    let mut debug = false;
     if !debug {
         print_anz(anz_error);
         print_qb(qb_error);
@@ -321,42 +318,40 @@ fn main(){
 
 }
 
-fn check_and_prune_structs<T: AsRef<String> + Clone + std::fmt::Debug,
-                           U: AsRef<String> + Clone + std::fmt::Debug>
-                          (struct_one: &mut Vec<T>, struct_two: &mut Vec<U>){
-    let mut struct_one_index_to_remove: Vec<i32> = Vec::new();                     
-    let mut struct_two_index_to_remove: Vec<i32> = Vec::new();
+fn check_and_prune_structs<T: AsRef<String> + Clone + std::fmt::Debug, U: AsRef<String> + Clone + std::fmt::Debug>
+                          (anz_struct: &mut Vec<T>, qb_struct: &mut Vec<U>){
+    let mut anz_index_to_remove: Vec<i32> = Vec::new();                     
+    let mut qb_index_to_remove: Vec<i32> = Vec::new();
 
-    for (pos, i) in struct_one.iter().enumerate(){
-        for (pos2, i2) in struct_two.iter().enumerate(){
-            if &i.as_ref() == &i2.as_ref() ||
-            (&i.as_ref()).to_string() == remove_trailing_zeros((&i2.as_ref()).to_string(), 0)
-            {
+    for (pos, i) in anz_struct.iter().enumerate(){
+        for (pos2, i2) in qb_struct.iter().enumerate(){
+            let qb_value = remove_trailing_zeros((&i2.as_ref()).to_string(), 0);
+            if (&i.as_ref()).to_string() == qb_value{
                 if &i.as_ref_date() == &i2.as_ref_date(){
-                    struct_one_index_to_remove.push(pos as i32);
-                    struct_two_index_to_remove.push(pos2 
-                        as i32);
+                    if ! anz_index_to_remove.contains(&(pos as i32)){
+                        anz_index_to_remove.push(pos as i32);
+                    }
+                    if !qb_index_to_remove.contains(&(pos2 as i32)){
+                        qb_index_to_remove.push(pos2 as i32);
+                    }
                 }
             }
         }
     }
-    let mut struct_one_removed:i32 = 0; 
-    let mut struct_two_removed:i32 = 0; 
-
-    for mut i in struct_one_index_to_remove{
-        i -= struct_one_removed;
-        struct_one.remove(i as usize);
-        struct_one_removed += 1;
+    let mut anz_removed:i32 = 0; 
+    let mut qb_removed:i32 = 0; 
+    for mut i in anz_index_to_remove{
+        i -= anz_removed;
+        let g = anz_struct.remove(i as usize);
+        anz_removed += 1;
+    }
+    qb_index_to_remove.sort();
+    for mut x in qb_index_to_remove{
+        x -= qb_removed;
+        let g = qb_struct.remove(x as usize);
+        qb_removed += 1;
     }
 
-    struct_two_index_to_remove.sort();
-    for mut x in struct_two_index_to_remove{
-        if x != 0{
-            x -= struct_two_removed;
-        }
-        struct_two.remove(x as usize);
-        struct_two_removed += 1;
-    }
 }
 
 fn check_and_return_hash<T: AsRef<String> + Clone>
@@ -382,14 +377,14 @@ fn check_and_return_hash<T: AsRef<String> + Clone>
     }
 }
 
-fn get_matching_values(comp_hash_count: HashMap<String, i32>, values_to_remove: &mut Vec<String>, original_values: &mut Vec<String>, 
+fn get_matching_values(comp_hash_count: HashMap<String, i32>, anz_remove: &mut Vec<String>, qb_remove: &mut Vec<String>, 
                        key:String, original_key: String, value: &i32){
     
     match comp_hash_count.get(&key as &str){
         Some(v) => {
             if value == v{
-                values_to_remove.push(key.clone());
-                original_values.push(original_key.clone());
+                anz_remove.push(key.clone());
+                qb_remove.push(original_key.clone());
             }
         }
         None => (),
