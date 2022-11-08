@@ -93,8 +93,8 @@ fn main(){
     let mut anz_struct_data: Vec<AnzFile> = Vec::new();
     let mut qb_struct_data: Vec<QbFile> = Vec::new();
 
-    let anz_file: String = "src/one_year_anz.csv".to_owned();
-    let qb_file: String = "src/one_year_qb.csv".to_owned();
+    let anz_file: String = "src/anz.csv".to_owned();
+    let qb_file: String = "src/qb.csv".to_owned();
 
     match read_csv_return_struct(&anz_file){
         Err(e) => eprintln!("{}", e),
@@ -311,9 +311,15 @@ fn main(){
     }
     let mut debug = false;
     if !debug {
-        print_anz(anz_error);
-        print_qb(qb_error);
-        print_doesnt_exist(doesnt_exist_error);
+        if let Err(_) = print_anz(anz_error){
+            println!("Cant To Anz File");
+        }
+        if let Err(_) = print_qb(qb_error){
+            println!("Cant To Qb File");
+        }
+        if let Err(_) = print_doesnt_exist(doesnt_exist_error){
+            println!("Cant To Errors File");
+        }
     }
 
 }
