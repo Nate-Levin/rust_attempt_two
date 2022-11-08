@@ -10,9 +10,7 @@ use std::error::Error;
 use std::collections::HashMap;
 use std::process;
 
-use crate::print::print::print_anz;
-use crate::print::print::print_qb;
-use crate::print::print::print_doesnt_exist;
+use crate::print::print::print;
 
 #[derive(Debug, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "PascalCase")]
@@ -93,8 +91,8 @@ fn main(){
     let mut anz_struct_data: Vec<AnzFile> = Vec::new();
     let mut qb_struct_data: Vec<QbFile> = Vec::new();
 
-    let anz_file: String = "src/anz.csv".to_owned();
-    let qb_file: String = "src/qb.csv".to_owned();
+    let anz_file: String = "anz.csv".to_owned();
+    let qb_file: String = "qb.csv".to_owned();
 
     match read_csv_return_struct(&anz_file){
         Err(e) => eprintln!("{}", e),
@@ -311,15 +309,7 @@ fn main(){
     }
     let mut debug = false;
     if !debug {
-        if let Err(_) = print_anz(anz_error){
-            println!("Cant To Anz File");
-        }
-        if let Err(_) = print_qb(qb_error){
-            println!("Cant To Qb File");
-        }
-        if let Err(_) = print_doesnt_exist(doesnt_exist_error){
-            println!("Cant To Errors File");
-        }
+        print(anz_error, qb_error, doesnt_exist_error);
     }
 
 }
