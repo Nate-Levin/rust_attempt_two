@@ -92,30 +92,6 @@ pub trait AsRef<String>{
     fn set_amount(&mut self, amount:String);
 }
 
-//pub trait AsRefObject<T>{
-//    fn as_ref_object(&self) -> &T;
-//    fn set_amount(&mut self, amount:String);
-//}
-//
-//impl AsRefObject<QbFile> for QbFile {
-//    fn as_ref_object(&self) -> &QbFile{
-//        &self
-//    }
-//
-//    fn set_amount(&mut self, amount: String){
-//        self.amount = (*amount).to_string();
-//    }
-//}
-//
-//impl AsRefObject<AnzFile> for AnzFile{
-//    fn as_ref_object(&self) -> &AnzFile{
-//        self
-//    }
-//    fn set_amount(&mut self, amount:String){
-//        self.amount = (*amount).to_string();
-//    }
-//}
-
 fn main(){
 
     let mut anz_struct_data: Vec<AnzFile> = Vec::new();
@@ -146,9 +122,7 @@ fn main(){
     check_and_return_hash(qb_struct_data.clone(), &mut qb_hash, &mut qb_hash_count);
     
     for (k1, v1) in qb_hash_count.iter(){
-        // matches with the leading 0 removed
-        let without_trailing_zero = remove_trailing_zeros(k1.clone().to_string(), 0);
-        get_matching_values(anz_hash_count.clone(), &mut anz_values_to_remove, &mut qb_values_to_remove, without_trailing_zero.clone(), k1.to_string(), v1); 
+        get_matching_values(anz_hash_count.clone(), &mut anz_values_to_remove, &mut qb_values_to_remove, k1.to_string(), v1); 
     }
 
     remove_matching_values_from_counter(anz_values_to_remove.clone(), &mut anz_hash_count, &mut qb_hash_count);
@@ -167,11 +141,7 @@ fn main(){
     for (key, value) in &qb_hash_count{
         // to eliminate the fact it still could be decimal issue
         let mut exists = false;
-        build_investigation(anz_hash_count.clone(), key, key, value, &mut exists, &mut investigate_qb, &mut investigate_anz);
-        if !exists {
-            let trailing_zero = remove_trailing_zeros(key.clone().to_string(), 0);
-            build_investigation(anz_hash_count.clone(), &trailing_zero, key, value, &mut exists, &mut investigate_qb, &mut investigate_anz);
-        }
+        build_investigation(anz_hash_count.clone(), key, value, &mut exists, &mut investigate_qb, &mut investigate_anz);
         if !exists {
             doesnt_exist_in_anz.push(key.clone());
         }
@@ -180,9 +150,7 @@ fn main(){
     for (key, value) in &anz_hash_count{
         // to eliminate the fact it still could be decimal issue
         let mut exists = false;
-        if let Some(v) = qb_hash_count.get(&key.clone()){
-            exists = true;
-        }
+        build_investigation(qb_hash_count.clone(), key, value, &mut exists, &mut investigate_anz, &mut investigate_qb);
         if ! exists{
             doesnt_exist_in_qb.push(key.clone());
         }
@@ -328,8 +296,7 @@ fn check_and_prune_structs<T: AsRef<String> + Clone + std::fmt::Debug, U: AsRef<
 
     for (pos, i) in anz_struct.iter().enumerate(){
         for (pos2, i2) in qb_struct.iter().enumerate(){
-            let qb_value = remove_trailing_zeros((&i2.as_ref()).to_string(), 0);
-            if (&i.as_ref()).to_string() == qb_value{
+            if (&i.as_ref()).to_string() == (&i2.as_ref()).to_string(){
                 if &i.as_ref_date() == &i2.as_ref_date(){
                     if ! anz_index_to_remove.contains(&(pos as i32)){
                         anz_index_to_remove.push(pos as i32);
@@ -373,12 +340,11 @@ fn check_and_return_hash<T: AsRef<String> + Clone>(struct_data: Vec<T>, hash_map
 }
 
 fn get_matching_values(comp_hash_count: HashMap<String, i32>, anz_remove: &mut Vec<String>, qb_remove: &mut Vec<String>, 
-                       key:String, original_key: String, value: &i32){
-
+                       key: String, value: &i32){
     if let Some(v) = comp_hash_count.get(&key as &str){
         if value == v{
             anz_remove.push(key.clone());
-            qb_remove.push(original_key.clone());
+            qb_remove.push(key.clone());
         }
     }
 }
@@ -390,14 +356,13 @@ fn remove_matching_values_from_counter(values_to_remove:Vec<String>, hash_counte
     }
 }
 
-fn build_investigation(hash_counter:HashMap<String, i32>, key: &String, original_key:&String, value: &i32, exists: &mut bool, qb_vec:&mut Vec<String>, anz_vec:&mut Vec<String>){
-    
+fn build_investigation(hash_counter:HashMap<String, i32>, key:&String, value: &i32, exists: &mut bool, vec_one:&mut Vec<String>, vec_two:&mut Vec<String>){
     if let Some(v) = hash_counter.get(key as &str){
         if v > value {
-            qb_vec.push(original_key.clone());
+            vec_one.push(key.clone());
         }
         else{
-            anz_vec.push(key.clone());
+            vec_two.push(key.clone());
         }
         *exists = true;
     }
