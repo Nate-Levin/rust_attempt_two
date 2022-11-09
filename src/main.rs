@@ -69,6 +69,9 @@ impl AsRef<String> for AnzFile {
     fn as_ref_date(&self) -> &String{
         &self.date
     }
+    fn set_amount(&mut self, amount: String){
+        self.amount = (*amount).to_string();
+    }
 }
 
 impl AsRef<String> for QbFile {
@@ -78,13 +81,40 @@ impl AsRef<String> for QbFile {
     fn as_ref_date(&self) -> &String{
         &self.date
     }
+    fn set_amount(&mut self, amount: String){
+        self.amount = (*amount).to_string();
+    }
 }
 
 pub trait AsRef<String>{
     fn as_ref(&self) -> &String;
     fn as_ref_date(&self) -> &String;
+    fn set_amount(&mut self, amount:String);
 }
 
+//pub trait AsRefObject<T>{
+//    fn as_ref_object(&self) -> &T;
+//    fn set_amount(&mut self, amount:String);
+//}
+//
+//impl AsRefObject<QbFile> for QbFile {
+//    fn as_ref_object(&self) -> &QbFile{
+//        &self
+//    }
+//
+//    fn set_amount(&mut self, amount: String){
+//        self.amount = (*amount).to_string();
+//    }
+//}
+//
+//impl AsRefObject<AnzFile> for AnzFile{
+//    fn as_ref_object(&self) -> &AnzFile{
+//        self
+//    }
+//    fn set_amount(&mut self, amount:String){
+//        self.amount = (*amount).to_string();
+//    }
+//}
 
 fn main(){
 
@@ -103,6 +133,7 @@ fn main(){
         Err(e) => eprintln!("{}", e),
         Ok(v)=> qb_struct_data = v,
     }
+
     let mut anz_hash: HashMap<String, Vec<AnzFile>> = HashMap::new();
     let mut anz_hash_count: HashMap<String, i32> = HashMap::new();
     let mut qb_hash: HashMap<String, Vec<QbFile>> = HashMap::new();
@@ -302,25 +333,24 @@ fn check_and_prune_structs<T: AsRef<String> + Clone + std::fmt::Debug, U: AsRef<
                 if &i.as_ref_date() == &i2.as_ref_date(){
                     if ! anz_index_to_remove.contains(&(pos as i32)){
                         anz_index_to_remove.push(pos as i32);
-                    }
-                    if !qb_index_to_remove.contains(&(pos2 as i32)){
                         qb_index_to_remove.push(pos2 as i32);
                     }
                 }
             }
         }
     }
-
-    remove_matched_index_from_struct(anz_struct, &mut anz_index_to_remove);
-    remove_matched_index_from_struct(qb_struct, &mut qb_index_to_remove);
-}
-
-fn remove_matched_index_from_struct<T>(struct_data:&mut Vec<T>, indices_to_remove:&mut Vec<i32>){
-    let mut counter = 0;
-    for mut x in indices_to_remove{
-        *x -= counter;
-        struct_data.remove(*x as usize);
-        counter += 1;
+    let mut anz_removed:i32 = 0; 
+    let mut qb_removed:i32 = 0; 
+    for mut i in anz_index_to_remove{
+        i -= anz_removed;
+        let g = anz_struct.remove(i as usize);
+        anz_removed += 1;
+    }
+    qb_index_to_remove.sort();
+    for mut x in qb_index_to_remove{
+        x -= qb_removed;
+        let g = qb_struct.remove(x as usize);
+        qb_removed += 1;
     }
 }
 
@@ -377,20 +407,23 @@ fn remove_trailing_zeros(mut number: String, iterations: i32) -> String{
     if iterations >= 3{
         return number.to_string();
     } 
-    if number.chars().last().unwrap() == '0' || number.chars().last().unwrap() == '.' {
+    if (number.chars().last().unwrap() == '0' || number.chars().last().unwrap() == '.') && number.contains(".") {
         number.pop();
         number = remove_trailing_zeros(number.clone(), iterations + 1);
     }
     number.to_string()
 }
 
-fn read_csv_return_struct<T: for<'de> serde::Deserialize<'de>>(csv_file: &str) -> Result<Vec<T>, Box<dyn Error>>{
+fn read_csv_return_struct<T: AsRef<String> + for<'de> serde::Deserialize<'de>>(csv_file: &str) -> Result<Vec<T>, Box<dyn Error>>{
     let mut rdr = Reader::from_path(csv_file).expect("COULDNT READ anz_file");
-    let iter = rdr.deserialize();
+    let iter = rdr.deserialize::<T>();
     let mut csv_file_struct: Vec<T> = Vec::new();
 
     for result in iter{
-        csv_file_struct.push(result?);
+        if let Ok(mut v) = result{
+            v.set_amount(remove_trailing_zeros((&v.as_ref()).to_string(), 0));
+            csv_file_struct.push(v);
+        }
     }
     Ok(csv_file_struct)
 }
