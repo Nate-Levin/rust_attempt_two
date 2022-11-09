@@ -9,7 +9,6 @@ use csv::Reader;
 use std::error::Error;
 use std::collections::HashMap;
 use std::process;
-use std::time::Instant;
 
 use crate::print::print::print;
 
@@ -89,7 +88,6 @@ pub trait AsRef<String>{
 
 fn main(){
 
-    //let now = Instant::now();
     let mut anz_struct_data: Vec<AnzFile> = Vec::new();
     let mut qb_struct_data: Vec<QbFile> = Vec::new();
 
@@ -119,8 +117,7 @@ fn main(){
     for (k1, v1) in qb_hash_count.iter(){
         // matches with the leading 0 removed
         let without_trailing_zero = remove_trailing_zeros(k1.clone().to_string(), 0);
-        get_matching_values(anz_hash_count.clone(), &mut anz_values_to_remove, &mut qb_values_to_remove, without_trailing_zero.clone(), k1.to_string(), v1);
-        
+        get_matching_values(anz_hash_count.clone(), &mut anz_values_to_remove, &mut qb_values_to_remove, without_trailing_zero.clone(), k1.to_string(), v1); 
     }
 
     remove_matching_values_from_counter(anz_values_to_remove.clone(), &mut anz_hash_count, &mut qb_hash_count);
@@ -313,56 +310,46 @@ fn check_and_prune_structs<T: AsRef<String> + Clone + std::fmt::Debug, U: AsRef<
             }
         }
     }
-    let mut anz_removed:i32 = 0; 
-    let mut qb_removed:i32 = 0; 
-    for mut i in anz_index_to_remove{
-        i -= anz_removed;
-        let g = anz_struct.remove(i as usize);
-        anz_removed += 1;
-    }
-    qb_index_to_remove.sort();
-    for mut x in qb_index_to_remove{
-        x -= qb_removed;
-        let g = qb_struct.remove(x as usize);
-        qb_removed += 1;
-    }
 
+    remove_matched_index_from_struct(anz_struct, &mut anz_index_to_remove);
+    remove_matched_index_from_struct(qb_struct, &mut qb_index_to_remove);
 }
 
-fn check_and_return_hash<T: AsRef<String> + Clone>
-                        (struct_data: Vec<T>, hash_map: &mut HashMap<String, Vec<T>>,
+fn remove_matched_index_from_struct<T>(struct_data:&mut Vec<T>, indices_to_remove:&mut Vec<i32>){
+    let mut counter = 0;
+    for mut x in indices_to_remove{
+        *x -= counter;
+        struct_data.remove(*x as usize);
+        counter += 1;
+    }
+}
+
+fn check_and_return_hash<T: AsRef<String> + Clone>(struct_data: Vec<T>, hash_map: &mut HashMap<String, Vec<T>>,
                          hash_counter: &mut HashMap<String, i32>){
     for i in struct_data{ 
-        match hash_map.get_mut(&*i.as_ref()){
-            Some(v) =>{
-                v.push(i.clone());
-            }
-            None =>{
-                hash_map.insert((*i.as_ref().clone()).to_string(), vec![i.clone()]);
-            }
+        if let Some(v) = hash_map.get_mut(&*i.as_ref()){
+            v.push(i.clone())
         }
-        match hash_counter.get_mut(&*i.as_ref()){
-            Some(v) =>{
-                *v += 1;
-            }
-            None =>{
-                hash_counter.insert((*i.as_ref().clone()).to_string(), 1);
-            }
+        else{
+            hash_map.insert((*i.as_ref().clone()).to_string(), vec![i.clone()]);
+        }
+        if let Some(v) = hash_counter.get_mut(&*i.as_ref()){
+            *v += 1;
+        }
+        else{
+            hash_counter.insert((*i.as_ref().clone()).to_string(), 1);
         }
     }
 }
 
 fn get_matching_values(comp_hash_count: HashMap<String, i32>, anz_remove: &mut Vec<String>, qb_remove: &mut Vec<String>, 
                        key:String, original_key: String, value: &i32){
-    
-    match comp_hash_count.get(&key as &str){
-        Some(v) => {
-            if value == v{
-                anz_remove.push(key.clone());
-                qb_remove.push(original_key.clone());
-            }
+
+    if let Some(v) = comp_hash_count.get(&key as &str){
+        if value == v{
+            anz_remove.push(key.clone());
+            qb_remove.push(original_key.clone());
         }
-        None => (),
     }
 }
 
@@ -374,18 +361,16 @@ fn remove_matching_values_from_counter(values_to_remove:Vec<String>, hash_counte
 }
 
 fn build_investigation(hash_counter:HashMap<String, i32>, key: &String, original_key:&String, value: &i32, exists: &mut bool, qb_vec:&mut Vec<String>, anz_vec:&mut Vec<String>){
-    match hash_counter.get(key as &str){
-        Some(v) => {
-            if v > value {
-                qb_vec.push(original_key.clone());
-            }
-            else{
-                anz_vec.push(key.clone());
-            }
-            *exists = true;
+    
+    if let Some(v) = hash_counter.get(key as &str){
+        if v > value {
+            qb_vec.push(original_key.clone());
         }
-        None => (),
-    } 
+        else{
+            anz_vec.push(key.clone());
+        }
+        *exists = true;
+    }
 }
 
 fn remove_trailing_zeros(mut number: String, iterations: i32) -> String{
@@ -400,8 +385,7 @@ fn remove_trailing_zeros(mut number: String, iterations: i32) -> String{
 }
 
 fn read_csv_return_struct<T: for<'de> serde::Deserialize<'de>>(csv_file: &str) -> Result<Vec<T>, Box<dyn Error>>{
-    let mut rdr = Reader::from_path(csv_file)
-    .expect("COULDNT READ anz_file");
+    let mut rdr = Reader::from_path(csv_file).expect("COULDNT READ anz_file");
     let iter = rdr.deserialize();
     let mut csv_file_struct: Vec<T> = Vec::new();
 
