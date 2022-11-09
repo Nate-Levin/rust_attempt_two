@@ -9,6 +9,7 @@ use csv::Reader;
 use std::error::Error;
 use std::collections::HashMap;
 use std::process;
+use std::time::Instant;
 
 use crate::print::print::print;
 
@@ -49,7 +50,7 @@ pub struct QbErrorMessage{
     pub dates: Vec<String>,
     pub names: Vec<String>,
     pub frequency: usize,
-    pub anz_frequency: String,
+    pub anz_frequency: usize,
     pub anz_dates: Vec<String>,
     pub anz_names: Vec<String>,
     pub error_message: String 
@@ -88,6 +89,7 @@ pub trait AsRef<String>{
 
 fn main(){
 
+    //let now = Instant::now();
     let mut anz_struct_data: Vec<AnzFile> = Vec::new();
     let mut qb_struct_data: Vec<QbFile> = Vec::new();
 
@@ -147,22 +149,16 @@ fn main(){
         }
     }
 
-    for (k1, v1) in &anz_hash_count{
+    for (key, value) in &anz_hash_count{
         // to eliminate the fact it still could be decimal issue
         let mut exists = false;
-        for (k2,v2) in &qb_hash_count {
-            match remove_trailing_zeros(k1.clone().to_string(), 0) == remove_trailing_zeros(k2.clone().to_string(), 0){
-                true => {
-                    exists = true;
-                }
-                false => (),
-            }
+        if let Some(v) = qb_hash_count.get(&key.clone()){
+            exists = true;
         }
         if ! exists{
-            doesnt_exist_in_qb.push(k1.clone());
+            doesnt_exist_in_qb.push(key.clone());
         }
     }
-
     // investigate anz has values that appear more often in anz,
     // investigate qb has values that appear more often in qb,
     // doesnt_exist has values that only appear in one or the other
@@ -221,47 +217,36 @@ fn main(){
     for i in investigate_anz{
         match qb_hash.get_key_value(&i){
             Some((k,v)) => {
-                let error_message = format!("The value {} exists more often in QUICKBOOKS than it does in ANZ", &i);
-                let mut dates: Vec<String> = Vec::new();
-                let mut names: Vec<String> = Vec::new();
-                let mut particulars: Vec<String> = Vec::new();
-                let mut qb_dates: Vec<String> = Vec::new();
-                let mut qb_names: Vec<String> = Vec::new();
-                let mut freq: usize = 0;
-
+                let mut anz: AnzErrorMessage = AnzErrorMessage{
+                    amount: i.clone(),
+                    frequency: 0,
+                    qb_frequency: 0,
+                    qb_dates: [].to_vec(),
+                    qb_names: [].to_vec(),
+                    details: [].to_vec(),
+                    dates: [].to_vec(),
+                    particulars: [].to_vec(),
+                    error_message: format!("The value {} exists more often in QUICKBOOKS than it does in ANZ", &i),
+                };
                 for mut x in v.clone(){
-                    qb_dates.push(x.clone().date);
+                    anz.qb_dates.push(x.clone().date);
                     if x.name == ""{
                         x.name = "--SPLIT--".to_owned();
                     }
-                    qb_names.push(x.clone().name);
+                    anz.qb_names.push(x.clone().name);
                 }
 
-                let str1: String = remove_trailing_zeros(i.to_string(), 0);
-                match anz_hash.get_key_value(&str1){
+                match anz_hash.get_key_value(&remove_trailing_zeros(i.to_string(), 0)){
                     Some((k,v)) => {
                         for x in v.clone(){
-                            dates.push(x.clone().date);
-                            names.push(x.clone().details);
-                            particulars.push(x.clone().particulars);
-                            freq = v.len();
+                            anz.dates.push(x.clone().date);
+                            anz.details.push(x.clone().details);
+                            anz.particulars.push(x.clone().particulars);
+                            anz.frequency = v.len();
                         }
                     }
                     None => (),
                 }
-
-                let anz: AnzErrorMessage = AnzErrorMessage{
-                    amount: i.clone(),
-                    frequency: freq,
-                    qb_frequency: v.clone().len(),
-                    qb_dates: qb_dates,
-                    qb_names: qb_names,
-                    details: names,
-                    dates: dates,
-                    particulars: particulars,
-                    error_message: error_message
-                };
-
                 anz_error.push(anz);
             }
             None => (),
@@ -272,36 +257,30 @@ fn main(){
     for i in investigate_qb{
         match anz_hash.get_key_value(&i){
             Some((k,v)) => {
-                let error_message = format!("The value {} exists more often in QUICKBOOKS than it does in ANZ", &i);
-                let mut dates: Vec<String> = Vec::new();
-                let mut names: Vec<String> = Vec::new();
-                let mut anz_names: Vec<String> = Vec::new();
-                let mut anz_dates: Vec<String> = Vec::new();
+                let mut qb: QbErrorMessage = QbErrorMessage{
+                    amount: i.clone(),
+                    dates: [].to_vec(),
+                    names: [].to_vec(),
+                    frequency: v.len(),
+                    anz_frequency: v.len(),
+                    anz_dates: [].to_vec(), 
+                    anz_names: [].to_vec(),
+                    error_message: format!("The value {} exists more often in QUICKBOOKS than it does in ANZ", &i),
+                };
 
                 for x in v.clone(){
-                    anz_names.push(x.clone().details);
-                    anz_dates.push(x.clone().date);
+                    qb.anz_names.push(x.clone().details);
+                    qb.anz_dates.push(x.clone().date);
                 }
                 match qb_hash.get_key_value(&i){
                     Some((k,v)) => {
                         for x in v.clone(){
-                            dates.push(x.clone().date);
-                            names.push(x.clone().name);
+                            qb.dates.push(x.clone().date);
+                            qb.names.push(x.clone().name);
                         }
                     }
                     None => (),
                 }
-                let qb: QbErrorMessage = QbErrorMessage{
-                    amount: i.clone(),
-                    dates: dates,
-                    names: names,
-                    frequency: v.len(),
-                    anz_frequency: v.len().to_string(),
-                    anz_dates: anz_dates, 
-                    anz_names: anz_names,
-                    error_message: error_message
-                };
-
                 qb_error.push(qb);
             }
             None => (),
