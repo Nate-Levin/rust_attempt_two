@@ -15,10 +15,8 @@ use crate::print::print::print;
 #[derive(Debug, Deserialize, PartialEq, Eq, Hash, Clone)]
 #[serde(rename_all = "PascalCase")]
 pub struct AnzFile {
-    pub details: String,
-    pub particulars: String,
-    pub code: String,
-    pub reference: String,
+    #[serde(rename = "Details")] 
+    pub name: String,
     pub amount: String,
     pub date: String,
 }
@@ -39,7 +37,7 @@ pub struct AnzErrorMessage{
     pub qb_dates: Vec<String>,
     pub qb_names: Vec<String>,
     pub dates: Vec<String>,
-    pub details: Vec<String>,
+    pub name: Vec<String>,
     pub particulars: Vec<String>,
     pub error_message: String 
 }
@@ -196,7 +194,7 @@ fn main(){
                 let mut names: Vec<String> = Vec::new();
                 for x in v.clone() {
                     dates.push(x.clone().date);
-                    names.push(x.clone().details);
+                    names.push(x.clone().name);
                 }
                 let temp: DoesntExistMessage = DoesntExistMessage {
                     amount: i.clone(),
@@ -220,7 +218,7 @@ fn main(){
                     qb_frequency: 0,
                     qb_dates: [].to_vec(),
                     qb_names: [].to_vec(),
-                    details: [].to_vec(),
+                    name: [].to_vec(),
                     dates: [].to_vec(),
                     particulars: [].to_vec(),
                     error_message: format!("The value {} exists more often in QUICKBOOKS than it does in ANZ", &i),
@@ -237,8 +235,7 @@ fn main(){
                     Some((k,v)) => {
                         for x in v.clone(){
                             anz.dates.push(x.clone().date);
-                            anz.details.push(x.clone().details);
-                            anz.particulars.push(x.clone().particulars);
+                            anz.name.push(x.clone().name);
                             anz.frequency = v.len();
                         }
                     }
@@ -266,7 +263,7 @@ fn main(){
                 };
 
                 for x in v.clone(){
-                    qb.anz_names.push(x.clone().details);
+                    qb.anz_names.push(x.clone().name);
                     qb.anz_dates.push(x.clone().date);
                 }
                 match qb_hash.get_key_value(&i){

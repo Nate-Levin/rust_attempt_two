@@ -39,7 +39,7 @@ pub mod print{
                 writeln!(f,"{}", x)?;
             }
             writeln!(f,"\nDetails: ")?;
-            for x in &i.details{
+            for x in &i.name{
                 writeln!(f,"{}", x)?;
             }
             writeln!(f,"\nQUICKBOOKS details are as follows:")?;
