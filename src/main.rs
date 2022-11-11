@@ -282,7 +282,7 @@ fn main(){
             None => (),
         }
     }
-    let mut debug = false;
+    let mut debug = true;
     if !debug {
         print(anz_error, qb_error, doesnt_exist_error);
     }
@@ -359,10 +359,15 @@ fn remove_matching_values_from_counter(values_to_remove:Vec<String>, hash_counte
 fn build_investigation(hash_counter:HashMap<String, i32>, key:&String, value: &i32, exists: &mut bool, vec_one:&mut Vec<String>, vec_two:&mut Vec<String>){
     if let Some(v) = hash_counter.get(key as &str){
         if v > value {
-            vec_one.push(key.clone());
+            if ! vec_one.contains(&key){
+                vec_one.push(key.clone());
+            }
         }
         else{
-            vec_two.push(key.clone());
+            if ! vec_two.contains(&key){
+                vec_two.push(key.clone());
+
+            }
         }
         *exists = true;
     }
@@ -390,5 +395,6 @@ fn read_csv_return_struct<T: AsRef<String> + for<'de> serde::Deserialize<'de>>(c
             csv_file_struct.push(v);
         }
     }
+    println!("SUCCESS");
     Ok(csv_file_struct)
 }
