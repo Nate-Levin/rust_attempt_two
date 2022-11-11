@@ -155,6 +155,7 @@ fn main(){
             doesnt_exist_in_qb.push(key.clone());
         }
     }
+
     // investigate anz has values that appear more often in anz,
     // investigate qb has values that appear more often in qb,
     // doesnt_exist has values that only appear in one or the other
@@ -282,7 +283,7 @@ fn main(){
             None => (),
         }
     }
-    let mut debug = true;
+    let mut debug = false;
     if !debug {
         print(anz_error, qb_error, doesnt_exist_error);
     }
@@ -298,7 +299,8 @@ fn check_and_prune_structs<T: AsRef<String> + Clone + std::fmt::Debug, U: AsRef<
         for (pos2, i2) in qb_struct.iter().enumerate(){
             if (&i.as_ref()).to_string() == (&i2.as_ref()).to_string(){
                 if &i.as_ref_date() == &i2.as_ref_date(){
-                    if ! anz_index_to_remove.contains(&(pos as i32)){
+                    if ! anz_index_to_remove.contains(&(pos as i32)) && 
+                       ! qb_index_to_remove.contains(&(pos2 as i32)){
                         anz_index_to_remove.push(pos as i32);
                         qb_index_to_remove.push(pos2 as i32);
                     }
@@ -338,6 +340,7 @@ fn check_and_return_hash<T: AsRef<String> + Clone>(struct_data: Vec<T>, hash_map
         }
     }
 }
+
 
 fn get_matching_values(comp_hash_count: HashMap<String, i32>, anz_remove: &mut Vec<String>, qb_remove: &mut Vec<String>, 
                        key: String, value: &i32){
