@@ -233,7 +233,7 @@ fn main(){
                     anz.qb_names.push(x.clone().name);
                 }
 
-                match anz_hash.get_key_value(&remove_trailing_zeros(i.to_string(), 0)){
+                match anz_hash.get_key_value(&i.to_string()){
                     Some((k,v)) => {
                         for x in v.clone(){
                             anz.dates.push(x.clone().date);
@@ -376,15 +376,19 @@ fn build_investigation(hash_counter:HashMap<String, i32>, key:&String, value: &i
     }
 }
 
-fn remove_trailing_zeros(mut number: String, iterations: i32) -> String{
+fn remove_trailing_zeros(mut number: String, iterations: i32) -> Result<String, Box<String>>{
     if iterations >= 3{
-        return number.to_string();
+        return Ok(number.to_string());
     } 
-    if (number.chars().last().unwrap() == '0' || number.chars().last().unwrap() == '.') && number.contains(".") {
+    if (number.chars().last() == Some('0') ||
+        number.chars().last() == Some('.')) && number.contains(".") {
         number.pop();
-        number = remove_trailing_zeros(number.clone(), iterations + 1);
+        number = match remove_trailing_zeros(number.clone(), iterations + 1){
+            Ok(num) => num,
+            Err(_) => return Err(Box::new("ERROR".to_string())), 
+        }
     }
-    number.to_string()
+    Ok(number.to_string())
 }
 
 fn read_csv_return_struct<T: AsRef<String> + for<'de> serde::Deserialize<'de>>(csv_file: &str) -> Result<Vec<T>, Box<dyn Error>>{
@@ -394,7 +398,11 @@ fn read_csv_return_struct<T: AsRef<String> + for<'de> serde::Deserialize<'de>>(c
 
     for result in iter{
         if let Ok(mut v) = result{
-            v.set_amount(remove_trailing_zeros((&v.as_ref()).to_string(), 0));
+            let remove_trailing_zeros = match remove_trailing_zeros((&v.as_ref()).to_string(), 0){
+                Ok(num) => num,
+                Err(_) => continue,
+            };
+            v.set_amount(remove_trailing_zeros);
             csv_file_struct.push(v);
         }
     }
